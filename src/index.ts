@@ -6,23 +6,36 @@ const __ = _ml(__filename);
 import fs from 'fs/promises';
 import path from 'path';
 import * as z from 'zod';
-import { FileDatabase } from "./database/FiletDatabase";
+import { FileDatabase } from "./database/FileDatabase";
 import bind from "./Binding";
 import {FileMessage as EM, FileResponse as ER, FileMessageValidator, FileResponseValidator} from "@uems/uemscommlib";
 import {RabbitNetworkHandler} from '@uems/micro-builder';
 import { ConfigurationSchema } from "./ConfigurationTypes";
+import { LocalUploadServer, UploadServerInterface } from "./uploader/UploadServer";
 
 __.info('starting hermes...');
 
 let messager: RabbitNetworkHandler<any, any, any, any, any, any> | undefined;
 let database: FileDatabase | undefined;
 let configuration: z.infer<typeof ConfigurationSchema> | undefined;
+let uploader: UploadServerInterface;
 
 fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encoding: 'utf8' })
     .then((file) => {
         __.debug('loaded configuration file');
 
         configuration = ConfigurationSchema.parse(JSON.parse(file));
+    })
+    .then(async () => {
+        if (!configuration) {
+            __.error('reached an uninitialised configuration, this should not be possible');
+            throw new Error('uninitialised configuration');
+        }
+
+        __.info('launching upload server');
+
+        uploader = new LocalUploadServer(configuration.upload);
+        await uploader.launch();
     })
     .then(() => (new Promise<FileDatabase>((resolve, reject) => {
         if (!configuration) {
@@ -33,7 +46,7 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
 
         __.info('setting up database connection');
 
-        database = new FileDatabase(configuration.database);
+        database = new FileDatabase(configuration.database, uploader);
 
         const unbind = database.once('error', (err) => {
             __.error('failed to setup the database connection', {
@@ -66,7 +79,7 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
             EM.DeleteFileMessage,
             EM.ReadFileMessage,
             EM.UpdateFileMessage,
-            ER.FileReadResponseMessage | ER.FileResponseMessage>
+            ER.FileServiceReadResponseMessage | ER.FileResponseMessage>
         (
             configuration.message,
             (data) => new FileMessageValidator().validate(data),
@@ -88,8 +101,8 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
             resolve();
         });
     })))
-    .then(() => {
-        if (!messager || !database) {
+    .then(async () => {
+        if (!messager || !database || !configuration) {
             __.error('reached an uninitialised database or messenger, this should not be possible');
             throw new Error('uninitialised database or messenger');
         }
