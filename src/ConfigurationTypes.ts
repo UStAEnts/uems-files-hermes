@@ -33,7 +33,19 @@ export const MessagingConfigurationSchema = z.object({
     topics: z.array(z.string()),
 });
 
+export const UploadConfigurationSchema = z.object({
+    uploadPath: z.string().optional(),
+    maxSize: z.number().optional(),
+    mimeList: z.array(z.string()).optional(),
+    mimeType: z.enum(['WHITELIST', 'BLACKLIST']).optional(),
+    port: z.number().optional(),
+    domain: z.string(),
+})
+
+export type UploadConfiguration = z.infer<typeof UploadConfigurationSchema>;
+
 export const ConfigurationSchema = z.object({
     message: MessagingConfigurationSchema,
     database: MongoDBConfigurationSchema,
+    upload: UploadConfigurationSchema,
 });
