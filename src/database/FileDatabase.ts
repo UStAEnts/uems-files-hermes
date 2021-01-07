@@ -9,9 +9,21 @@ import InternalFile = FileResponse.InternalFile;
 import { UploadServerInterface } from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
-export type DatabaseFile = InternalFile & {
+export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
 }
+
+const databaseToShallow = (file: DatabaseFile): ShallowInternalFile => ({
+    owner: file.owner,
+    mime: file.mime,
+    date: file.date,
+    id: file.id,
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    filename: file.filename,
+    downloadURL: file.downloadURL,
+});
 
 export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFileMessage, DeleteFileMessage, UpdateFileMessage, ShallowInternalFile> {
 
@@ -133,22 +145,9 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             delete r._id;
         }
 
-        // Now lets strip out any unknown properties!
-        const allowedProps = ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL'];
-        result.forEach((e) => {
-            for (const key of Object.keys(e)) {
-                if (!allowedProps.includes(key)) {
-                    console.log('removing key', key);
-                    // @ts-ignore
-                    delete e[key];
-                }
-            }
-        });
-
         await Promise.all(promises);
 
-        // TODO: find a better way to handle this, use an explicit convertor
-        return result as unknown as ShallowInternalFile[];
+        return result.map((s) => databaseToShallow(s));
     }
 
     protected updateImpl(update: FileMessage.UpdateFileMessage): Promise<string[]> {
