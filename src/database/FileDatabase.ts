@@ -11,6 +11,7 @@ import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
 export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
+    events: string[],
 }
 
 const databaseToShallow = (file: DatabaseFile): ShallowInternalFile => ({
