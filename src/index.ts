@@ -12,6 +12,9 @@ import {FileMessage as EM, FileResponse as ER, FileMessageValidator, FileRespons
 import {RabbitNetworkHandler} from '@uems/micro-builder';
 import { ConfigurationSchema } from "./ConfigurationTypes";
 import { LocalUploadServer, UploadServerInterface } from "./uploader/UploadServer";
+import { FileBindingValidators } from "@uems/uemscommlib/build/filebinding/FileBindingValidators";
+import FileBindingMessageValidator = FileBindingValidators.FileBindingMessageValidator;
+import FileBindingResponseValidator = FileBindingValidators.FileBindingResponseValidator;
 
 __.info('starting hermes...');
 
@@ -74,6 +77,25 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
 
         __.info('setting up the message broker');
 
+        const fileMessageValidator = new FileMessageValidator();
+        const fileResponseValidator = new FileResponseValidator();
+        const fileBindingMessageValidator = new FileBindingMessageValidator();
+        const fileBindingResponseValidator = new FileBindingResponseValidator();
+
+        const validateIncoming = async (data: any) => {
+            const file = await fileMessageValidator.validate(data);
+            if (file) return true;
+
+            return fileBindingMessageValidator.validate(data);
+        }
+
+        const validateOutgoing = async (data: any) => {
+            const file = await fileResponseValidator.validate(data);
+            if (file) return true;
+
+            return fileBindingResponseValidator.validate(data);
+        }
+
         messager = new RabbitNetworkHandler<EM.FileMessage,
             EM.CreateFileMessage,
             EM.DeleteFileMessage,
@@ -82,8 +104,9 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
             ER.FileServiceReadResponseMessage | ER.FileResponseMessage>
         (
             configuration.message,
-            (data) => new FileMessageValidator().validate(data),
-            (data) => new FileResponseValidator().validate(data),
+            // TODO: why a new one each call?
+            validateIncoming,
+            validateOutgoing,
         );
 
         const unbind = messager.once('error', (err) => {
