@@ -33,6 +33,18 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
     constructor(configuration: MongoDBConfiguration, server: UploadServerInterface) {
         super(configuration);
         this._server = server;
+
+        server.setResolver(async (filename) => {
+            if(this._details === undefined) throw new Error('database not initialised');
+
+            console.log('looking for', filename);
+            const result = await this._details.findOne({
+                filePath: filename,
+            });
+            console.log('got', result);
+
+            return result.filename;
+        })
     }
 
     protected createImpl = async (create: FileMessage.CreateFileMessage, details: Collection): Promise<string[]> => {
