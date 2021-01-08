@@ -169,6 +169,28 @@ export class LocalUploadServer implements UploadServerInterface {
             next();
         }
 
+        this._express.get(/^\/download\/([A-Z0-9]{20})$/, (req, res) => {
+            if (this._resolver === undefined) {
+                // Send 503 - Service Unavailable
+                res.sendStatus(503);
+                return;
+            }
+
+            this._resolver(`/download/${req.params[0]}`).then((filename) => {
+                res.download('/'+req.params[0], filename, {
+                    root: this._uploadPath,
+                }, (err) => {
+                    if (err) {
+                        console.error(err);
+                        if (!res.headersSent) res.sendStatus(500);
+                    }
+                })
+            }).catch((err) => {
+                res.sendStatus(500);
+                console.error(err);
+            })
+        })
+
         this._express.post('/upload/:id', validator, (req, res) => {
             if (!req.files) {
                 res.json({
