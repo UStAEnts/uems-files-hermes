@@ -19,6 +19,7 @@ export const kb = (n: number) => n;
 export const mb = (n: number) => n * 1024;
 export const gb = (n: number) => n * 1024 * 1024;
 
+export type GetFileNameFunction = (downloadURI: string) => Promise<string>;
 export type UpdateFunction = (filePath: string, fileName: string, mime: string) => Promise<void>;
 
 export interface UploadServerInterface {
@@ -30,6 +31,8 @@ export interface UploadServerInterface {
     generateDownloadURI(file: DatabaseFile): Promise<string>;
 
     deleteFile(file: DatabaseFile): Promise<void>
+
+    setResolver(resolver: GetFileNameFunction): void;
 
 }
 
@@ -75,6 +78,7 @@ export class LocalUploadServer implements UploadServerInterface {
 
     private _domain: string;
 
+    private _resolver?: GetFileNameFunction;
 
     constructor({ uploadPath, maxSize, mimeList, mimeType, port, domain }: UploadConfiguration) {
         this._uploadPath = uploadPath ?? path.join(__dirname, '..', '..', 'uploads');
@@ -222,6 +226,11 @@ export class LocalUploadServer implements UploadServerInterface {
                     });
                 });
         })
+    }
+
+
+    setResolver(value: GetFileNameFunction) {
+        this._resolver = value;
     }
 
     private static generateIdentifier() {
