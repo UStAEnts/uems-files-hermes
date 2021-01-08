@@ -37,15 +37,17 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
     protected createImpl = async (create: FileMessage.CreateFileMessage, details: Collection): Promise<string[]> => {
         const { msg_id, msg_intention, status, ...document } = create;
 
-        // Move userid to owner
-        // @ts-ignore
-        document.owner = document.userid;
-        // @ts-ignore
-        delete document.userid;
-        // @ts-ignore
-        document.date = Date.now();
+        const createObject: Omit<DatabaseFile, 'id'| 'downloadURL' | 'filePath'|'mime'> = {
+            filename: document.filename,
+            type: document.type,
+            size: document.size,
+            name: document.name,
+            date: Date.now(),
+            owner: document.userid,
+            events: [],
+        }
 
-        const result = await details.insertOne(document);
+        const result = await details.insertOne(createObject);
 
         if (result.insertedCount !== 1 || result.insertedId === undefined) {
             throw new Error('failed to insert')
