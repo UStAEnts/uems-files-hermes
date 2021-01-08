@@ -154,4 +154,147 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return super.defaultUpdate(update)
     }
 
+    public async addFilesToEvents(eventID: string, fileIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+
+        const result = await this._details.updateMany({
+            _id: {
+                $in: fileIDs.map((e) => new ObjectId(e)),
+            }
+        }, {
+            $addToSet: {
+                events: eventID,
+            }
+        });
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return true;
+    }
+
+    public async addEventsToFile(fileID: string, eventIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+        if(!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
+
+        const result = await this._details.updateOne({
+            _id: new ObjectId(fileID),
+        }, {
+            $addToSet: {
+                events: {
+                    $each: eventIDs,
+                },
+            },
+        });
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return true;
+    }
+
+    public async removeFilesFromEvents(eventID: string, fileIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+
+        const result = await this._details.updateMany({
+            _id: {
+                $in: fileIDs.map((e) => new ObjectId(e)),
+            }
+        }, {
+            $pull: {
+                events: eventID,
+            }
+        });
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return true;
+    }
+
+    public async removeEventsFromFile(fileID: string, eventIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+        if(!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
+
+        const result = await this._details.updateOne({
+            _id: new ObjectId(fileID),
+        }, {
+            $pullAll: {
+                events: eventIDs,
+            }
+        })
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return true;
+    }
+
+    public async setFilesForEvent(eventID: string, fileIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+
+        // Going to do this in two steps
+        // - Remove event ID from all files
+        // - Add event ID to the given files
+
+        const result = await this._details.updateMany({
+            // TODO: double check this
+            events: eventID,
+        }, {
+            $pull: {
+                events: eventID,
+            }
+        })
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return this.addFilesToEvents(eventID, fileIDs);
+    }
+
+    public async setEventsForFile(fileID: string, eventIDs: string[]): Promise<boolean>{
+        if(this._details === undefined) throw new Error('database not initialised');
+        if(!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
+
+        const result = await this._details.updateOne({
+            _id: new ObjectId(fileID),
+        }, {
+            $set: {
+                events: eventIDs,
+            }
+        })
+
+        if (result.result.ok !== 1) {
+            throw new Error('failed to update bindings');
+        }
+
+        return true;
+    }
+
+    public async getFilesForEvent(eventID: string): Promise<string[]>{
+        if(this._details === undefined) throw new Error('database not initialised');
+
+        const result = await this._details.find({
+            events: eventID,
+        }).toArray();
+
+        return (result ?? []).map((e) => e._id.toHexString());
+    }
+
+    public async getEventsForFile(fileID: string): Promise<string[]>{
+        if(this._details === undefined) throw new Error('database not initialised');
+        if(!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
+
+        const result = await this._details.findOne({
+            _id: new ObjectId(fileID)
+        });
+
+        return result.events ?? [];
+    }
+
 }
