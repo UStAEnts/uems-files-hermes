@@ -146,7 +146,7 @@ export class LocalUploadServer implements UploadServerInterface {
         this._express.use(fileUpload({
             debug: true,
         }));
-        this._express.use(function(req, res, next) {
+        this._express.use(function (req, res, next) {
             res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
             res.header("Access-Control-Allow-Headers", "*");
             next();
@@ -225,7 +225,7 @@ export class LocalUploadServer implements UploadServerInterface {
             }
 
             // Check the mime type is valid
-            if (!filter(res, file)){
+            if (!filter(res, file)) {
                 return;
             }
 
