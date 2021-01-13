@@ -83,15 +83,19 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
         const fileBindingResponseValidator = new FileBindingResponseValidator();
 
         const validateIncoming = async (data: any) => {
+            __.debug('trying to process');
             const file = await fileMessageValidator.validate(data);
             if (file) return true;
 
+            __.debug(`message ${data.msg_id} failed file message validator, trying binding`);
             return fileBindingMessageValidator.validate(data);
         }
 
         const validateOutgoing = async (data: any) => {
             const file = await fileResponseValidator.validate(data);
             if (file) return true;
+
+            __.debug(`message ${data.msg_id} failed file response validator, trying binding`);
 
             return fileBindingResponseValidator.validate(data);
         }
@@ -104,7 +108,6 @@ fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encodi
             ER.FileServiceReadResponseMessage | ER.FileResponseMessage>
         (
             configuration.message,
-            // TODO: why a new one each call?
             validateIncoming,
             validateOutgoing,
         );

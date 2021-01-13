@@ -246,6 +246,10 @@ async function execute(
 }
 
 export default function bind(database: FileDatabase, broker: RabbitNetworkHandler<any, any, any, any, any, any>): void {
+    broker.on('any', (message, send, routingKey) => {
+        _b.debug(`message ${message.msg_id} arrived on ${routingKey}`);
+    });
+
     broker.on('query', (message, send, key) => {
         if (key.startsWith("file.details")) return execute(message, database, send)
         else if (key.startsWith("file.events")) return handleBinding(message, database, send);
