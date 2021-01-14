@@ -34,6 +34,7 @@ export interface UploadServerInterface {
 
     setResolver(resolver: GetFileNameFunction): void;
 
+    stop(): Promise<void>;
 }
 
 export class LocalUploadServer implements UploadServerInterface {
@@ -79,6 +80,8 @@ export class LocalUploadServer implements UploadServerInterface {
     private _domain: string;
 
     private _resolver?: GetFileNameFunction;
+
+    private _server?: Server;
 
     constructor({ uploadPath, maxSize, mimeList, mimeType, port, domain }: UploadConfiguration) {
         this._uploadPath = uploadPath ?? path.join(__dirname, '..', '..', 'uploads');
@@ -265,10 +268,16 @@ export class LocalUploadServer implements UploadServerInterface {
         return output;
     }
 
+    async stop(): Promise<void> {
+        if (this._server) {
+            this._server.close();
+        }
+    }
+
     launch(): Promise<void> {
         __.info('LocalUploadServer now available on port: ' + this._port);
 
-        this._express.listen(this._port);
+        this._server = this._express.listen(this._port);
         return Promise.resolve();
     }
 
