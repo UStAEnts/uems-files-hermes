@@ -71,6 +71,9 @@ describe('create messages of states', () => {
             provisionUploadURI(file: FileResponse.InternalFile, update: UpdateFunction): Promise<string> {
                 return Promise.resolve(mocks.provisionUploadURI.apply(this, [file, update]));
             },
+            stop(): Promise<void> {
+                return Promise.resolve();
+            }
         });
     });
     afterAll(() => defaultAfterAll(client, db));
