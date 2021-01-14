@@ -44,7 +44,7 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
-    "@uems/micro-builder": "0.0.9",
+    "@uems/micro-builder": "0.0.12",
     "@uems/uemscommlib": "0.1.0-beta.36",
     "amqplib": "^0.6.0",
     "body-parser": "^1.19.0",
