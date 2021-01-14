@@ -1,6 +1,4 @@
 import { constants } from "http2";
-
-process.env.NODE_ENV = 'dev';
 import { Db, MongoClient, ObjectId } from "mongodb";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
 import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
