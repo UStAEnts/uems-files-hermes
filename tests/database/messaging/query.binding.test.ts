@@ -1,4 +1,3 @@
-process.env.NODE_ENV = 'dev';
 import { Db, MongoClient, ObjectId } from "mongodb";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
 import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
@@ -117,6 +116,7 @@ describe('create messages of states', () => {
 
     describe('file instances', () => {
         it('should return all entries on an empty query', async () => {
+            console.log(await db.collection('details').find({}).toArray());
             const query = await broker.promiseEmit('query', {
                 ...empty('READ'),
             }, 'file.details.read');
