@@ -9,7 +9,7 @@ import InternalFile = FileResponse.InternalFile;
 import { UploadServerInterface } from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
-import { genericDelete } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
+import { genericDelete, genericUpdate } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
 
 export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
@@ -198,8 +198,8 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return result.map((s) => databaseToShallow(s));
     }
 
-    protected updateImpl(update: FileMessage.UpdateFileMessage): Promise<string[]> {
-        return this.defaultUpdate(update)
+    protected updateImpl(update: FileMessage.UpdateFileMessage, details: Collection): Promise<string[]> {
+        return genericUpdate(update, ['name', 'type'], details)
     }
 
     public async addFilesToEvents(eventID: string, fileIDs: string[]): Promise<boolean> {
