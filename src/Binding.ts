@@ -2,7 +2,7 @@ import { constants } from "http2";
 import { FileDatabase } from "./database/FileDatabase";
 import { _ml } from "./logging/Log";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
-import { FileBindingMessage, FileBindingResponse, FileMessage, FileResponse } from "@uems/uemscommlib";
+import { FileBindingMessage, FileBindingResponse, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import { FileValidators } from "@uems/uemscommlib/build/file/FileValidators";
 import ShallowFileRepresentation = FileValidators.ShallowFileRepresentation;
 import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
@@ -13,6 +13,7 @@ import UnbindFilesFromEventMessage = FileBindingMessage.UnbindFilesFromEventMess
 import UnbindEventsFromFileMessage = FileBindingMessage.UnbindEventsFromFileMessage;
 import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
+import { ClientFacingError } from "@uems/micro-builder/build/errors/ClientFacingError";
 
 const _b = _ml(__filename, 'binding');
 
@@ -209,6 +210,26 @@ async function execute(
         _b.error('failed to query database for events', {
             error: e as unknown,
         });
+
+        if (e instanceof ClientFacingError) {
+            send({
+                userID: message.userID,
+                status: MsgStatus.FAIL,
+                msg_id: message.msg_id,
+                msg_intention: message.msg_intention,
+                result: [e.message],
+            });
+            return;
+        } else {
+            send({
+                userID: message.userID,
+                status: constants.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+                msg_id: message.msg_id,
+                msg_intention: message.msg_intention,
+                result: ['internal server error'],
+            });
+            return;
+        }
     }
 
     if (message.msg_intention === 'CREATE' && status === 200) {
