@@ -102,27 +102,6 @@ export class LocalUploadServer implements UploadServerInterface {
         this._port = port ?? 1432;
         this._domain = domain;
 
-        const storage = multer.diskStorage({
-            destination: (req, file, cb) => {
-                console.log('setting output path to ', this._uploadPath);
-                cb(null, this._uploadPath);
-            },
-
-            filename: (req, file, cb) => {
-                if (!req.params.id) {
-                    cb(new Error('No ID was provided'), '');
-                    return;
-                }
-
-                if (this._provisionedIDs[req.params.id] === undefined) {
-                    cb(new Error('Invalid parameter'), '');
-                    return;
-                }
-
-
-            }
-        });
-
         const filter = (res: Response, file: UploadedFile) => {
             if (this._mimeList.includes(file.mimetype)) {
                 if (this._mimeListType === 'BLACKLIST') {
