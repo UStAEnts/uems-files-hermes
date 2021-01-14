@@ -93,7 +93,7 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         }
 
         const id = (result.insertedId as ObjectId).toHexString();
-        await super.log(id, 'inserted');
+        await this.log(id, 'inserted');
 
         const uploadURI = await this._server.provisionUploadURI({
             date: Date.now(),
@@ -192,7 +192,7 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
     }
 
     protected updateImpl(update: FileMessage.UpdateFileMessage): Promise<string[]> {
-        return super.defaultUpdate(update)
+        return this.defaultUpdate(update)
     }
 
     public async addFilesToEvents(eventID: string, fileIDs: string[]): Promise<boolean> {
@@ -334,7 +334,6 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         const result = await this._details.findOne({
             _id: new ObjectId(fileID)
         });
-
         return result.events ?? [];
     }
 
