@@ -91,65 +91,65 @@ describe('create messages of states', () => {
 
     describe('file instances', () => {
 
-    it('should allow creates to take place', async (done) => {
-        broker.emit('create', {
-            ...empty('CREATE'),
-            name: 'name',
-            userid: 'userid',
-            type: 'type',
-            size: 1000,
-            filename: 'filename',
-        }, 'file.details.create', (creation) => {
-            expect(creation).toHaveProperty('result');
-            expect(creation).toHaveProperty('status');
+        it('should allow creates to take place', async (done) => {
+            broker.emit('create', {
+                ...empty('CREATE'),
+                name: 'name',
+                userid: 'userid',
+                type: 'type',
+                size: 1000,
+                filename: 'filename',
+            }, 'file.details.create', (creation) => {
+                expect(creation).toHaveProperty('result');
+                expect(creation).toHaveProperty('status');
 
-            expect(creation.status).toEqual(MsgStatus.SUCCESS);
-            expect(creation.result).toHaveLength(1);
+                expect(creation.status).toEqual(MsgStatus.SUCCESS);
+                expect(creation.result).toHaveLength(1);
 
-            broker.emit('query', { ...empty('READ'), id: creation.result[0] }, 'file.details.read', (data) => {
-                expect(data).toHaveProperty('result');
-                expect(data).toHaveProperty('status');
+                broker.emit('query', { ...empty('READ'), id: creation.result[0] }, 'file.details.read', (data) => {
+                    expect(data).toHaveProperty('result');
+                    expect(data).toHaveProperty('status');
 
-                expect(data.status).toEqual(MsgStatus.SUCCESS);
-                expect(data.result).toHaveLength(1);
-                expect(data.result[0]).toHaveProperty('name', 'name');
-                expect(data.result[0]).toHaveProperty('size', 1000);
-                expect(data.result[0]).toHaveProperty('type', 'type');
-                expect(data.result[0]).toHaveProperty('filename', 'filename');
+                    expect(data.status).toEqual(MsgStatus.SUCCESS);
+                    expect(data.result).toHaveLength(1);
+                    expect(data.result[0]).toHaveProperty('name', 'name');
+                    expect(data.result[0]).toHaveProperty('size', 1000);
+                    expect(data.result[0]).toHaveProperty('type', 'type');
+                    expect(data.result[0]).toHaveProperty('filename', 'filename');
+
+                    done();
+                });
+            });
+        });
+
+        it('should fail gracefully if the database is dead', async (done) => {
+            let db: FileDatabase = new Proxy(fileDB, {
+                get(target: FileDatabase, p: PropertyKey, receiver: any): any {
+                    throw new Error('proxied database throwing error');
+                },
+            });
+
+            broker.clear();
+            bind(db, fakeBroker);
+
+            broker.emit('create', {
+                ...empty('CREATE'),
+                name: 'name',
+                userid: 'userid',
+                type: 'type',
+                size: 1000,
+                filename: 'filename',
+            }, 'file.details.create', (message) => {
+                expect(message).toHaveProperty('result');
+                expect(message).toHaveProperty('status');
+
+                expect(message.result).toHaveLength(1);
+                expect(message.status).not.toEqual(MsgStatus.SUCCESS);
+                expect(message.result[0]).toEqual('internal server error');
 
                 done();
             });
         });
-    });
-
-    it('should fail gracefully if the database is dead', async (done) => {
-        let db: FileDatabase = new Proxy(fileDB, {
-            get(target: FileDatabase, p: PropertyKey, receiver: any): any {
-                throw new Error('proxied database throwing error');
-            },
-        });
-
-        broker.clear();
-        bind(db, fakeBroker);
-
-        broker.emit('create', {
-            ...empty('CREATE'),
-            name: 'name',
-            userid: 'userid',
-            type: 'type',
-            size: 1000,
-            filename: 'filename',
-        }, 'file.details.create', (message) => {
-            expect(message).toHaveProperty('result');
-            expect(message).toHaveProperty('status');
-
-            expect(message.result).toHaveLength(1);
-            expect(message.status).not.toEqual(MsgStatus.SUCCESS);
-            expect(message.result[0]).toEqual('internal server error');
-
-            done();
-        });
-    });
     });
 
     describe('file bindings', () => {
