@@ -206,6 +206,14 @@ export class LocalUploadServer implements UploadServerInterface {
                 console.warn('file size not a match');
             }
 
+            if (file.size > this._maxSize){
+                res.json({
+                    status: 'FAIL',
+                    error: 'File is too large, this should not have been allowed to happen',
+                });
+                return;
+            }
+
             // Check the mime type is valid
             if (!filter(res, file)) {
                 return;
