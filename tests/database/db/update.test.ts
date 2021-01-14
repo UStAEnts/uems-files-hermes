@@ -144,4 +144,27 @@ describe('create messages of states', () => {
             'downloadURL',
         ]);
     });
+
+    describe('bindings', () => {
+
+        it('should allow overwriting events on a file via update', async () => {
+            const update = await fileDB.setEventsForFile('56d9bf92f9be48771d6fe5b1', ['ev1', 'ev2']);
+            expect(update).toBeTruthy();
+
+            const query = await fileDB.getEventsForFile('56d9bf92f9be48771d6fe5b1');
+            expect(query).toHaveLength(2);
+            expect(query).toContain('ev1');
+            expect(query).toContain('ev2');
+        });
+
+        it('should allow overwriting files on an event via update', async () => {
+            const update = await fileDB.setFilesForEvent('alpha_event1', ['56d9bf92f9be48771d6fe5b1']);
+            expect(update).toBeTruthy();
+
+            const query = await fileDB.getEventsForFile('56d9bf92f9be48771d6fe5b1');
+            expect(query).toHaveLength(3);
+            expect(query).toContain('alpha_event1');
+        })
+
+    })
 });

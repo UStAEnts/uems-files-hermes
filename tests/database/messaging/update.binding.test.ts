@@ -19,6 +19,8 @@ import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
 import QueryByFileMessage = FileBindingMessage.QueryByFileMessage;
 import QueryByEventMessage = FileBindingMessage.QueryByEventMessage;
 import { constants } from "http2";
+import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
+import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,
@@ -31,7 +33,7 @@ describe('create messages of states', () => {
     let client!: MongoClient;
     let db!: Db;
 
-    let broker!: BindingBroker<ReadFileMessage | QueryByFileMessage | QueryByEventMessage, DeleteFileMessage | UnbindFilesFromEventMessage | UnbindEventsFromFileMessage, UpdateFileMessage, CreateFileMessage | BindFilesToEventMessage | BindEventsToFileMessage, FileMessage.FileMessage>;
+    let broker!: BindingBroker<ReadFileMessage | QueryByFileMessage | QueryByEventMessage, DeleteFileMessage | UnbindFilesFromEventMessage | UnbindEventsFromFileMessage, UpdateFileMessage | SetEventsForFileMessage | SetFilesForEventMessage, CreateFileMessage | BindFilesToEventMessage | BindEventsToFileMessage, FileMessage.FileMessage>;
     let fakeBroker!: RabbitNetworkHandler<any, any, any, any, any, any>;
 
     let mocks = {
@@ -192,5 +194,62 @@ describe('create messages of states', () => {
         expect(update.result).toHaveLength(1);
         expect(update.result[0]).toContain('operation');
     });
+
+    describe('bindings', () => {
+
+        it('should allow overwriting events on a file via update', async () => {
+            const update = await broker.promiseEmit('update', {
+                ...empty('UPDATE'),
+                fileID: '56d9bf92f9be48771d6fe5b1',
+                eventIDs: ['ev1', 'ev2'],
+            }, 'file.events.update');
+
+            expect(update).toHaveProperty('result');
+            expect(update).toHaveProperty('status');
+            expect(update.status).toEqual(MsgStatus.SUCCESS);
+            expect(update.result).toBeTruthy();
+
+            const query = await broker.promiseEmit('query', {
+                ...empty('READ'),
+                fileID: '56d9bf92f9be48771d6fe5b1',
+            }, 'file.events.read');
+
+            console.log(query)
+
+            expect(query).toHaveProperty('result');
+            expect(query).toHaveProperty('status');
+            expect(query.status).toEqual(MsgStatus.SUCCESS);
+            expect(query.result).toHaveLength(2);
+            expect(query.result[0]).toEqual('ev1');
+            expect(query.result[1]).toEqual('ev2');
+        });
+
+        it('should allow overwriting files on an event via update', async () => {
+            const update = await broker.promiseEmit('update', {
+                ...empty('UPDATE'),
+                fileIDs: ['56d9bf92f9be48771d6fe5b1'],
+                eventID: 'alpha_event1',
+            }, 'file.events.update');
+
+            expect(update).toHaveProperty('result');
+            expect(update).toHaveProperty('status');
+            expect(update.status).toEqual(MsgStatus.SUCCESS);
+            expect(update.result).toBeTruthy();
+
+            const query = await broker.promiseEmit('query', {
+                ...empty('READ'),
+                fileID: '56d9bf92f9be48771d6fe5b1',
+            }, 'file.events.read');
+
+            console.log(query)
+
+            expect(query).toHaveProperty('result');
+            expect(query).toHaveProperty('status');
+            expect(query.status).toEqual(MsgStatus.SUCCESS);
+            expect(query.result).toHaveLength(3);
+            expect(query.result).toContain('alpha_event1');
+        });
+
+    })
 
 });
