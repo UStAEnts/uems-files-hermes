@@ -12,6 +12,7 @@ import { _ml } from "../logging/Log";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import bodyParser from "body-parser";
 import { FileHandle } from "fs/promises";
+import { Server } from "http";
 
 const __ = _ml(__filename);
 
@@ -35,6 +36,7 @@ export interface UploadServerInterface {
     setResolver(resolver: GetFileNameFunction): void;
 
     stop(): Promise<void>;
+
 }
 
 export class LocalUploadServer implements UploadServerInterface {
@@ -159,7 +161,7 @@ export class LocalUploadServer implements UploadServerInterface {
             }
 
             this._resolver(`/download/${req.params[0]}`).then((filename) => {
-                res.download('/'+req.params[0], filename, {
+                res.download('/' + req.params[0], filename, {
                     root: this._uploadPath,
                 }, (err) => {
                     if (err) {
