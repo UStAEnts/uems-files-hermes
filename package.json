@@ -7,7 +7,7 @@
     "build": "tsc --listEmittedFiles",
     "start": "node build/index.js",
     "start:dev": "ts-node --files src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --runInBand"
   },
   "repository": {
     "type": "git",
