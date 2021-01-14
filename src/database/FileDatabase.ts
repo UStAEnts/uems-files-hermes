@@ -9,6 +9,7 @@ import InternalFile = FileResponse.InternalFile;
 import { UploadServerInterface } from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
+import { genericDelete } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
 
 export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
@@ -125,8 +126,11 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return [id, uploadURI];
     }
 
-    protected deleteImpl(remove: FileMessage.DeleteFileMessage): Promise<string[]> {
-        return super.defaultDelete(remove);
+    protected deleteImpl(remove: FileMessage.DeleteFileMessage, details: Collection): Promise<string[]> {
+        if (!ObjectId.isValid(remove.id)) throw new Error('Invalid ID');
+        return genericDelete({
+            _id: new ObjectId(remove.id),
+        }, remove.id, details, this.log.bind(this));
     }
 
     protected async queryImpl(query: FileMessage.ReadFileMessage, details: Collection): Promise<ShallowInternalFile[]> {
