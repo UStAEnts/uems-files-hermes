@@ -70,8 +70,19 @@ describe('create messages of states', () => {
 
     let fileDB: FileDatabase;
 
-    it('basic create inserts into the database', async () => {
-        mocks.provisionUploadURI.mockReturnValue(Promise.resolve('faked download URI'));
+    it('basic create inserts into the database with provision updates', async () => {
+        let updateResolve: Function;
+        const updatePromise = new Promise(resolve => {
+            updateResolve = resolve;
+        });
+
+        mocks.provisionUploadURI.mockImplementation((file, update) => {
+            update('updated path', 'updated filename', 'new mime');
+            updateResolve();
+
+            return Promise.resolve('faked download URI');
+        });
+
         const result = await fileDB.create({
             ...empty('CREATE'),
             name: 'name',
@@ -85,13 +96,18 @@ describe('create messages of states', () => {
         expect(typeof (result[0]) === 'string').toBeTruthy();
         expect(result[1]).toEqual('faked download URI');
 
+        // Once this is done we want to update
+        await updatePromise;
+
         const query = await fileDB.query({ ...empty('READ') });
         expect(query).toHaveLength(1);
         expect(query[0]).toHaveProperty('name', 'name');
         expect(query[0]).toHaveProperty('size', 1000);
         expect(query[0]).toHaveProperty('type', 'type');
-        expect(query[0]).toHaveProperty('filename', 'filename');
+        expect(query[0]).toHaveProperty('filename', 'updated filename');
+        expect(query[0]).toHaveProperty('mime', 'new mime');
         expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL']));
+
     });
 
     it('should not include additional properties in creating records', async () => {
