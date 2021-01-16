@@ -10,6 +10,7 @@ import { UploadServerInterface } from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
 import { genericDelete, genericUpdate } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
+import { __ } from "../logging/Log";
 
 export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
@@ -73,8 +74,19 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             return result.filename;
         });
 
-        if (this._details === undefined) throw new Error('Database initialisation failed');
-        void this._details.createIndex({ name: 'text', filename: 'text' });
+        if (this._details === undefined) {
+            __.warn('DB wasn\'t prepared to adding a ready listener');
+            this.once('ready', () => {
+                __.debug('Database ready, creating index')
+                if (this._details === undefined) throw new Error('Database initialisation failed');
+                void this._details.createIndex({ name: 'text', filename: 'text' });
+                __.debug('Index asserted')
+            })
+        } else {
+            void this._details.createIndex({ name: 'text', filename: 'text' });
+            __.debug('Index asserted')
+        }
+
     }
 
     protected createImpl = async (create: FileMessage.CreateFileMessage, details: Collection): Promise<string[]> => {
@@ -110,7 +122,7 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             filename: create.filename,
             mime: '',
         }, async (filePath, fileName, mime) => {
-
+            __.debug('Updating ', filePath, fileName, mime);
             const answer = await details.updateOne({
                 _id: new ObjectId(id),
             }, {
