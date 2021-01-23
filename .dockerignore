@@ -1,0 +1,11 @@
+.git/
+.github/
+node_modules/
+
+build/
+logs/
+tests/
+uploads/
+
+npm-debug.log
+.gitignore
