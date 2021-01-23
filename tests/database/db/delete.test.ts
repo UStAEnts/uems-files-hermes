@@ -1,10 +1,9 @@
 import { Db, MongoClient, ObjectId } from "mongodb";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
+import { BaseSchema, FileResponse } from "@uems/uemscommlib";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { GetFileNameFunction, UpdateFunction } from "../../../src/uploader/UploadServer";
-import { FileResponse } from "@uems/uemscommlib";
+import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach } from "../../utilities/setup";
 import Intentions = BaseSchema.Intentions;
-import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, haveNoAdditionalKeys } from "../../utilities/setup";
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,
@@ -134,7 +133,7 @@ describe('create messages of states', () => {
             await expect(fileDB.removeFilesFromEvents('alpha_event1', ['56d9bf92f9be48771d6fe5b0']))
                 .resolves.toBeTruthy()
 
-            console.log(( await db.collection('details').find({}).toArray()))
+            console.log((await db.collection('details').find({}).toArray()))
 
             await expect(fileDB.getEventsForFile('56d9bf92f9be48771d6fe5b0')).resolves.toEqual(['alpha_event2'])
         });

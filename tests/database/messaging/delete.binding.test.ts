@@ -1,8 +1,7 @@
 import { constants } from "http2";
 import { Db, MongoClient, ObjectId } from "mongodb";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
-import { FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
+import { BaseSchema, FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import { BindingBroker } from "../../utilities/BindingBroker";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach } from "../../utilities/setup";
@@ -249,7 +248,7 @@ describe('create messages of states', () => {
             expect(query.result).toContain('alpha_event1');
             expect(query.result).toContain('alpha_event2');
         });
-        it('should ignore if a file binding does not already exist by eventID', async() => {
+        it('should ignore if a file binding does not already exist by eventID', async () => {
             const result = await broker.promiseEmit('delete', {
                 ...empty('DELETE'),
                 fileIDs: ['56d9bf92f9be48771d6fe5b0'],

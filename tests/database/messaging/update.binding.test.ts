@@ -1,12 +1,12 @@
 import { Db, MongoClient, ObjectId } from "mongodb";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
-import { FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
+import { BaseSchema, FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import { BindingBroker } from "../../utilities/BindingBroker";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, haveNoAdditionalKeys } from "../../utilities/setup";
 import bind from "../../../src/Binding";
 import { GetFileNameFunction, UpdateFunction } from "../../../src/uploader/UploadServer";
+import { constants } from "http2";
 import Intentions = BaseSchema.Intentions;
 import ReadFileMessage = FileMessage.ReadFileMessage;
 import DeleteFileMessage = FileMessage.DeleteFileMessage;
@@ -18,7 +18,6 @@ import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
 import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
 import QueryByFileMessage = FileBindingMessage.QueryByFileMessage;
 import QueryByEventMessage = FileBindingMessage.QueryByEventMessage;
-import { constants } from "http2";
 import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
 import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 

@@ -3,8 +3,6 @@ import { FileDatabase } from "./database/FileDatabase";
 import { _ml } from "./logging/Log";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
 import { FileBindingMessage, FileBindingResponse, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
-import { FileValidators } from "@uems/uemscommlib/build/file/FileValidators";
-import ShallowFileRepresentation = FileValidators.ShallowFileRepresentation;
 import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
 import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
 import QueryByEventMessage = FileBindingMessage.QueryByEventMessage;
@@ -14,6 +12,7 @@ import UnbindEventsFromFileMessage = FileBindingMessage.UnbindEventsFromFileMess
 import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
 import { ClientFacingError } from "@uems/micro-builder/build/errors/ClientFacingError";
+import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
 const _b = _ml(__filename, 'binding');
 
@@ -183,8 +182,6 @@ async function execute(
     let status: number = constants.HTTP_STATUS_INTERNAL_SERVER_ERROR;
     let result: string[] | FileResponse.ShallowInternalFile[] = [];
 
-    console.log('msg', message);
-
     try {
         switch (message.msg_intention) {
             case 'CREATE':
@@ -239,7 +236,7 @@ async function execute(
         send({
             msg_intention: message.msg_intention,
             msg_id: message.msg_id,
-            result: [result[0]] as ShallowFileRepresentation[],
+            result: [result[0]] as ShallowInternalFile[],
             status,
             uploadURI: result[1] as string,
             userID: message.userID,
@@ -252,7 +249,7 @@ async function execute(
             msg_intention: message.msg_intention,
             msg_id: message.msg_id,
             status,
-            result: result as ShallowFileRepresentation[],
+            result: result as ShallowInternalFile[],
             userID: message.userID,
         });
     } else {

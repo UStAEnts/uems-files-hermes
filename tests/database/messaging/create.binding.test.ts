@@ -1,24 +1,23 @@
 import { Db, MongoClient } from "mongodb";
 import { RabbitNetworkHandler } from "@uems/micro-builder";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
-import { FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
-import Intentions = BaseSchema.Intentions;
-import ReadFileMessage = FileMessage.ReadFileMessage;
-import DeleteFileMessage = FileMessage.DeleteFileMessage;
-import UpdateFileMessage = FileMessage.UpdateFileMessage;
-import CreateFileMessage = FileMessage.CreateFileMessage;
+import { BaseSchema, FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import { BindingBroker } from "../../utilities/BindingBroker";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach } from "../../utilities/setup";
 import bind from "../../../src/Binding";
 import { GetFileNameFunction, UpdateFunction } from "../../../src/uploader/UploadServer";
+import { constants } from "http2";
+import Intentions = BaseSchema.Intentions;
+import ReadFileMessage = FileMessage.ReadFileMessage;
+import DeleteFileMessage = FileMessage.DeleteFileMessage;
+import UpdateFileMessage = FileMessage.UpdateFileMessage;
+import CreateFileMessage = FileMessage.CreateFileMessage;
 import UnbindFilesFromEventMessage = FileBindingMessage.UnbindFilesFromEventMessage;
 import UnbindEventsFromFileMessage = FileBindingMessage.UnbindEventsFromFileMessage;
 import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
 import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
 import QueryByFileMessage = FileBindingMessage.QueryByFileMessage;
 import QueryByEventMessage = FileBindingMessage.QueryByEventMessage;
-import { constants } from "http2";
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,

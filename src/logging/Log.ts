@@ -1,6 +1,6 @@
 import winston from "winston";
 import util from 'util';
-import { has } from "@uems/uemscommlib/build/utilities/ObjectUtilities";
+import { has } from "@uems/uemscommlib";
 
 /**
  * The current environment simplified to either dev or prod only. If NODE_ENV is not set to dev we are assumed to be in
@@ -69,9 +69,9 @@ export const prettyFormat = winston.format.combine(
     formatter,
 );
 
-export function setupGlobalLogger(){
-    if(useFile) winston.add(fileTransport[0]);
-    if(environment === 'dev'){
+export function setupGlobalLogger() {
+    if (useFile) winston.add(fileTransport[0]);
+    if (environment === 'dev') {
         winston.add(new winston.transports.Console({
             format: prettyFormat,
             level: 'silly',

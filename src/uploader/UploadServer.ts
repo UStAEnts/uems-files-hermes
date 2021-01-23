@@ -137,6 +137,7 @@ export class LocalUploadServer implements UploadServerInterface {
         });
 
         const validator: RequestHandler = (req, res, next) => {
+            console.log(`Received rest for ${req.originalUrl}`);
             if (!req.params.id) {
                 res.json({
                     status: 'FAIL',
@@ -146,9 +147,12 @@ export class LocalUploadServer implements UploadServerInterface {
             }
 
             if (this._provisionedIDs[req.params.id] === undefined) {
+            console.log(`  Request had ID but it was not defined, using ${req.params.id} when only ${Object.keys(this._provisionedIDs).join(', ')} are permitted`);
                 res.sendStatus(404);
                 return;
             }
+
+            console.log('  Request is approved');
 
             next();
         }

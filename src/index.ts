@@ -8,13 +8,10 @@ import path from 'path';
 import * as z from 'zod';
 import { FileDatabase } from "./database/FileDatabase";
 import bind from "./Binding";
-import {FileMessage as EM, FileResponse as ER, FileMessageValidator, FileResponseValidator} from "@uems/uemscommlib";
+import {FileMessage as EM, FileResponse as ER, FileMessageValidator, FileResponseValidator, FileBindingMessageValidator, FileBindingResponseValidator} from "@uems/uemscommlib";
 import {RabbitNetworkHandler} from '@uems/micro-builder';
 import { ConfigurationSchema } from "./ConfigurationTypes";
 import { LocalUploadServer, UploadServerInterface } from "./uploader/UploadServer";
-import { FileBindingValidators } from "@uems/uemscommlib/build/filebinding/FileBindingValidators";
-import FileBindingMessageValidator = FileBindingValidators.FileBindingMessageValidator;
-import FileBindingResponseValidator = FileBindingValidators.FileBindingResponseValidator;
 
 __.info('starting hermes...');
 

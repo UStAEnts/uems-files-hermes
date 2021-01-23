@@ -1,10 +1,9 @@
 import { Db, MongoClient, ObjectId } from "mongodb";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
+import { BaseSchema, FileResponse } from "@uems/uemscommlib";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { GetFileNameFunction, UpdateFunction } from "../../../src/uploader/UploadServer";
-import { FileResponse, MsgStatus } from "@uems/uemscommlib";
-import Intentions = BaseSchema.Intentions;
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, haveNoAdditionalKeys } from "../../utilities/setup";
+import Intentions = BaseSchema.Intentions;
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,
