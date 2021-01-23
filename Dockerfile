@@ -4,7 +4,7 @@ FROM node:current-alpine
 WORKDIR /user/app
 
 # Normally we want to run the cached built one
-CMD ["npm", "start"]
+CMD ["npm", "run", "start"]
 
 # This module exposes a file server available on this port
 EXPOSE 27017
