@@ -4,8 +4,9 @@
   "description": "The file management microservice of the UEMS platform",
   "main": "build/index.js",
   "scripts": {
+    "clean": "rm -r build/ || true",
     "build": "tsc --listEmittedFiles",
-    "start": "node build/index.js",
+    "start": "node -r source-map-support/register --trace-warnings build/src/index.js",
     "start:dev": "ts-node --files src/index.ts",
     "test": "jest --runInBand"
   },
@@ -56,6 +57,7 @@
     "express-fileupload": "^1.2.0",
     "mongodb": "^3.6.3",
     "multer": "^1.4.2",
+    "source-map-support": "^0.5.19",
     "url-join": "^4.0.1",
     "winston": "^3.3.3",
     "zod": "^1.11.11"

@@ -20,7 +20,7 @@ let database: FileDatabase | undefined;
 let configuration: z.infer<typeof ConfigurationSchema> | undefined;
 let uploader: UploadServerInterface;
 
-fs.readFile(path.join(__dirname, '..', 'config', 'configuration.json'), { encoding: 'utf8' })
+fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { encoding: 'utf8' })
     .then((file) => {
         __.debug('loaded configuration file');
 
