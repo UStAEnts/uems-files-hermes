@@ -1,6 +1,6 @@
 import { constants } from "http2";
 import { Db, MongoClient, ObjectId } from "mongodb";
-import { RabbitNetworkHandler } from "@uems/micro-builder";
+import { RabbitNetworkHandler } from "@uems/micro-builder/build/src";
 import { BaseSchema, FileBindingMessage, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import { BindingBroker } from "../../utilities/BindingBroker";
 import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";

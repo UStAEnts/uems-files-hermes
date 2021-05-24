@@ -1,5 +1,5 @@
 import { UserMessage } from "@uems/uemscommlib";
-import { RabbitNetworkHandler } from "@uems/micro-builder";
+import { RabbitNetworkHandler } from "@uems/micro-builder/build/src";
 
 interface MockBrokerInterface<R, D, U, C, M> {
     on(name: 'query', callback: (message: R, send: (data: any) => void) => void, routingKey: string): void;
