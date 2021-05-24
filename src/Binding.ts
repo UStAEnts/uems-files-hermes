@@ -16,8 +16,17 @@ import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
 const _b = _ml(__filename, 'binding');
 
+/**
+ * Tracks the latest 50 requests in the system and provides a utility save function which will limit the length of the
+ * array to 50 and automatically apply traits to the healthcheck system
+ */
 // @ts-ignore
 const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
+/**
+ * Saves the result of a request through and will remove the earliest entry from the array if th count is greater than
+ * or equal to 50.
+ * @param d the state of the request, this is a general status, not specific
+ */
 requestTracker.save = function save(d) {
     if (requestTracker.length >= 50) requestTracker.shift();
     requestTracker.push(d);
