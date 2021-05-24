@@ -1,7 +1,7 @@
 import { constants } from "http2";
 import { FileDatabase } from "./database/FileDatabase";
 import { _ml } from "./logging/Log";
-import { RabbitNetworkHandler } from "@uems/micro-builder";
+import { RabbitNetworkHandler, tryApplyTrait } from "@uems/micro-builder/build/src";
 import { FileBindingMessage, FileBindingResponse, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
 import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
 import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
@@ -11,10 +11,28 @@ import UnbindFilesFromEventMessage = FileBindingMessage.UnbindFilesFromEventMess
 import UnbindEventsFromFileMessage = FileBindingMessage.UnbindEventsFromFileMessage;
 import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
-import { ClientFacingError } from "@uems/micro-builder/build/errors/ClientFacingError";
+import { ClientFacingError } from "@uems/micro-builder/build/src/errors/ClientFacingError";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
 const _b = _ml(__filename, 'binding');
+
+/**
+ * Tracks the latest 50 requests in the system and provides a utility save function which will limit the length of the
+ * array to 50 and automatically apply traits to the healthcheck system
+ */
+// @ts-ignore
+const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
+/**
+ * Saves the result of a request through and will remove the earliest entry from the array if th count is greater than
+ * or equal to 50.
+ * @param d the state of the request, this is a general status, not specific
+ */
+requestTracker.save = function save(d) {
+    if (requestTracker.length >= 50) requestTracker.shift();
+    requestTracker.push(d);
+    tryApplyTrait('successful', requestTracker.filter((e) => e === 'success').length);
+    tryApplyTrait('fail', requestTracker.filter((e) => e === 'fail').length);
+};
 
 async function handleBinding(
     message: FileBindingMessage.FileBindingMessage,
@@ -23,6 +41,7 @@ async function handleBinding(
 ) {
     if (!database) {
         _b.warn('query was received without a valid database connection');
+        requestTracker.save('fail');
         throw new Error('uninitialised database connection');
     }
 
@@ -50,6 +69,7 @@ async function handleBinding(
                 const m = message as BindFilesToEventMessage;
                 const r = await database.addFilesToEvents(m.eventID, m.fileIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -60,6 +80,7 @@ async function handleBinding(
                 const m = message as BindEventsToFileMessage;
                 const r = await database.addEventsToFile(m.fileID, m.eventIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -68,6 +89,7 @@ async function handleBinding(
                 });
             } else {
                 // Reject as this should not be possible
+                requestTracker.save('fail');
                 send(rejection);
             }
             return;
@@ -78,6 +100,7 @@ async function handleBinding(
                 const m = message as QueryByEventMessage;
                 const r = await database.getFilesForEvent(m.eventID);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -88,6 +111,7 @@ async function handleBinding(
                 const m = message as QueryByFileMessage;
                 const r = await database.getEventsForFile(m.fileID);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -95,6 +119,7 @@ async function handleBinding(
                     result: r,
                 });
             } else {
+                requestTracker.save('fail');
                 // Reject as this should not be possible
                 send(rejection);
             }
@@ -106,6 +131,7 @@ async function handleBinding(
                 const m = message as SetFilesForEventMessage;
                 const r = await database.setFilesForEvent(m.eventID, m.fileIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -116,6 +142,7 @@ async function handleBinding(
                 const m = message as SetEventsForFileMessage;
                 const r = await database.setEventsForFile(m.fileID, m.eventIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -123,6 +150,7 @@ async function handleBinding(
                     result: r,
                 });
             } else {
+                requestTracker.save('fail');
                 // Reject as this should not be possible
                 send(rejection);
             }
@@ -134,6 +162,7 @@ async function handleBinding(
                 const m = message as UnbindFilesFromEventMessage;
                 const r = await database.removeFilesFromEvents(m.eventID, m.fileIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -144,6 +173,7 @@ async function handleBinding(
                 const m = message as UnbindEventsFromFileMessage;
                 const r = await database.removeEventsFromFile(m.fileID, m.eventIDs);
 
+                requestTracker.save(r ? 'success' : 'fail');
                 send({
                     ...acceptPartial,
                     msg_intention: message.msg_intention,
@@ -151,6 +181,7 @@ async function handleBinding(
                     result: r,
                 });
             } else {
+                requestTracker.save('fail');
                 // Reject as this should not be possible
                 send(rejection);
             }
@@ -160,6 +191,7 @@ async function handleBinding(
         _b.error('failed to query database for events', {
             error: e as unknown,
         });
+        requestTracker.save('fail');
 
         // @ts-ignore - cries
         send({
@@ -176,6 +208,7 @@ async function execute(
 ) {
     if (!database) {
         _b.warn('query was received without a valid database connection');
+        requestTracker.save('fail');
         throw new Error('uninitialised database connection');
     }
 
@@ -207,6 +240,7 @@ async function execute(
         _b.error('failed to query database for events', {
             error: e as unknown,
         });
+        requestTracker.save('fail');
 
         if (e instanceof ClientFacingError) {
             send({
@@ -231,6 +265,7 @@ async function execute(
 
     if (message.msg_intention === 'CREATE' && status === 200) {
         console.log('out', result, status);
+        requestTracker.save('success');
         // CREATE has to be handled differently because its two strings have v different meanings
         // as the second one is an upload URI instead of an ID
         send({
@@ -261,6 +296,7 @@ async function execute(
             userID: message.userID,
         });
     }
+    requestTracker.save(status === constants.HTTP_STATUS_BAD_REQUEST ? 'fail' : 'success');
 }
 
 export default function bind(database: FileDatabase, broker: RabbitNetworkHandler<any, any, any, any, any, any>): void {

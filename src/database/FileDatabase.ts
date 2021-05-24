@@ -1,5 +1,5 @@
 import { Collection, Db, ObjectId } from "mongodb";
-import { GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder";
+import { GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder/build/src";
 import { FileMessage, FileResponse } from "@uems/uemscommlib";
 import ReadFileMessage = FileMessage.ReadFileMessage;
 import CreateFileMessage = FileMessage.CreateFileMessage;
@@ -9,7 +9,7 @@ import InternalFile = FileResponse.InternalFile;
 import { UploadServerInterface } from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
-import { genericDelete, genericUpdate } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
+import { genericDelete, genericUpdate } from "@uems/micro-builder/build/src/utility/GenericDatabaseFunctions";
 import { __ } from "../logging/Log";
 
 export type DatabaseFile = ShallowInternalFile & {
