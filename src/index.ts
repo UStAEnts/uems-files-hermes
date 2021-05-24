@@ -8,12 +8,26 @@ import path from 'path';
 import * as z from 'zod';
 import { FileDatabase } from "./database/FileDatabase";
 import bind from "./Binding";
-import {FileMessage as EM, FileResponse as ER, FileMessageValidator, FileResponseValidator, FileBindingMessageValidator, FileBindingResponseValidator} from "@uems/uemscommlib";
-import {RabbitNetworkHandler} from '@uems/micro-builder';
+import { FileMessage as EM, FileResponse as ER, FileMessageValidator, FileResponseValidator, FileBindingMessageValidator, FileBindingResponseValidator, has } from "@uems/uemscommlib";
+import { launchCheck, RabbitNetworkHandler, tryApplyTrait } from '@uems/micro-builder/build/src';
 import { ConfigurationSchema } from "./ConfigurationTypes";
 import { LocalUploadServer, UploadServerInterface } from "./uploader/UploadServer";
 
 __.info('starting hermes...');
+
+launchCheck(['successful', 'errored', 'rabbitmq', 'database', 'config'], (traits: Record<string, any>) => {
+    if (has(traits, 'rabbitmq') && traits.rabbitmq !== '_undefined' && !traits.rabbitmq) return 'unhealthy';
+    if (has(traits, 'database') && traits.database !== '_undefined' && !traits.database) return 'unhealthy';
+    if (has(traits, 'config') && traits.config !== '_undefined' && !traits.config) return 'unhealthy';
+
+    // If 75% of results fail then we return false
+    if (has(traits, 'successful') && has(traits, 'errored')) {
+        const errorPercentage = traits.errored / (traits.successful + traits.errored);
+        if (errorPercentage > 0.05) return 'unhealthy-serving';
+    }
+
+    return 'healthy';
+});
 
 let messager: RabbitNetworkHandler<any, any, any, any, any, any> | undefined;
 let database: FileDatabase | undefined;
@@ -29,10 +43,12 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
     .then(async () => {
         if (!configuration) {
             __.error('reached an uninitialised configuration, this should not be possible');
+            tryApplyTrait('config', false);
             throw new Error('uninitialised configuration');
         }
 
         __.info('launching upload server');
+        tryApplyTrait('config', true);
 
         uploader = new LocalUploadServer(configuration.upload);
         await uploader.launch();
@@ -41,6 +57,7 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
         if (!configuration) {
             __.error('reached an uninitialised configuration, this should not be possible');
             reject(new Error('uninitialised configuration'));
+            tryApplyTrait('config', false);
             return;
         }
 
@@ -52,6 +69,7 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
             __.error('failed to setup the database connection', {
                 error: err,
             });
+            tryApplyTrait('database', false);
 
             reject(err);
         });
@@ -61,14 +79,20 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
             // Make sure we dont later try and reject a resolved promise from an unrelated error
             unbind();
 
-            if (database) resolve(database);
-            else reject(new Error('database is invalid'));
+            if (database) {
+                resolve(database);
+                tryApplyTrait('database', true);
+            }else {
+                reject(new Error('database is invalid'));
+                tryApplyTrait('database', false);
+            }
         });
     })))
     .then(() => (new Promise<void>((resolve, reject) => {
         if (!configuration) {
             __.error('reached an uninitialised configuration, this should not be possible');
             reject(new Error('uninitialised configuration'));
+            tryApplyTrait('config', false);
             return;
         }
 
@@ -113,6 +137,7 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
             __.error('failed to setup the message broker', {
                 error: err,
             });
+            tryApplyTrait('rabbitmq', false);
 
             reject(err);
         });
@@ -121,12 +146,15 @@ fs.readFile(path.join(__dirname, '..', '..', 'config', 'configuration.json'), { 
             __.info('message broker enabled');
             // Make sure we dont later try and reject a resolved promise from an unrelated error
             unbind();
+            tryApplyTrait('rabbitmq', true);
             resolve();
         });
     })))
     .then(async () => {
         if (!messager || !database || !configuration) {
             __.error('reached an uninitialised database or messenger, this should not be possible');
+            tryApplyTrait('database', false);
+            tryApplyTrait('rabbitmq', false);
             throw new Error('uninitialised database or messenger');
         }
 
