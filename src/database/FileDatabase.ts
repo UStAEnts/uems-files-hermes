@@ -11,6 +11,7 @@ import ShallowInternalFile = FileResponse.ShallowInternalFile;
 import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
 import { genericDelete, genericUpdate } from "@uems/micro-builder/build/src/utility/GenericDatabaseFunctions";
 import { __ } from "../logging/Log";
+import sha256File from "sha256-file";
 
 export type DatabaseFile = ShallowInternalFile & {
     filePath: string,
@@ -27,6 +28,7 @@ const databaseToShallow = (file: DatabaseFile): ShallowInternalFile => ({
     type: file.type,
     filename: file.filename,
     downloadURL: file.downloadURL,
+    checksum: file.checksum,
 });
 
 export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFileMessage, DeleteFileMessage, UpdateFileMessage, ShallowInternalFile> {
@@ -92,13 +94,13 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
     protected createImpl = async (create: FileMessage.CreateFileMessage, details: Collection): Promise<string[]> => {
         const { msg_id, msg_intention, status, ...document } = create;
 
-        const createObject: Omit<DatabaseFile, 'id' | 'downloadURL' | 'filePath' | 'mime'> = {
+        const createObject: Omit<DatabaseFile, 'id' | 'downloadURL' | 'filePath' | 'mime' | 'checksum'> = {
             filename: document.filename,
             type: document.type,
             size: document.size,
             name: document.name,
             date: Date.now(),
-            owner: document.userid,
+            owner: document.userID,
             events: [],
         }
 
@@ -117,7 +119,7 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             name: create.name,
             size: create.size,
             // @ts-ignore - arrrrgh
-            owner: create.userid,
+            owner: create.userID,
             type: create.type,
             filename: create.filename,
             mime: '',
@@ -129,6 +131,8 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
                 $set: {
                     filePath,
                     filename: fileName,
+                    // TODO: possible bug, is filepath the actual file path or is it relative to something?
+                    checksum: sha256File(filePath),
                     mime,
                 }
             });

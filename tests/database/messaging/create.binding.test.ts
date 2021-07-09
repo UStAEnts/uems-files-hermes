@@ -97,7 +97,7 @@ describe('create messages of states', () => {
             broker.emit('create', {
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -137,7 +137,7 @@ describe('create messages of states', () => {
             broker.emit('create', {
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -161,7 +161,7 @@ describe('create messages of states', () => {
             const result = await broker.promiseEmit('create', {
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -200,7 +200,7 @@ describe('create messages of states', () => {
             const result = await broker.promiseEmit('create', {
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -254,7 +254,7 @@ describe('create messages of states', () => {
             const result = await broker.promiseEmit('create', {
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',

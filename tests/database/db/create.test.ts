@@ -85,7 +85,7 @@ describe('create messages of states', () => {
         const result = await fileDB.create({
             ...empty('CREATE'),
             name: 'name',
-            userid: 'userid',
+            userID: 'userid',
             type: 'type',
             size: 1000,
             filename: 'filename',
@@ -114,7 +114,7 @@ describe('create messages of states', () => {
         const result = await fileDB.create({
             ...empty('CREATE'),
             name: 'name',
-            userid: 'userid',
+            userID: 'userid',
             type: 'type',
             size: 1000,
             filename: 'filename',
@@ -143,7 +143,7 @@ describe('create messages of states', () => {
             const result = await fileDB.create({
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -171,7 +171,7 @@ describe('create messages of states', () => {
             const result = await fileDB.create({
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
@@ -194,7 +194,7 @@ describe('create messages of states', () => {
             const result = await fileDB.create({
                 ...empty('CREATE'),
                 name: 'name',
-                userid: 'userid',
+                userID: 'userid',
                 type: 'type',
                 size: 1000,
                 filename: 'filename',
