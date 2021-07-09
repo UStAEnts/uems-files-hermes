@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@uems/micro-builder": "^1.0.1",
-    "@uems/uemscommlib": "0.1.0-beta.38",
+    "@uems/uemscommlib": "0.1.0-beta.42",
     "amqplib": "^0.6.0",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
