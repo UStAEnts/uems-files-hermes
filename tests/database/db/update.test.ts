@@ -141,6 +141,7 @@ describe('create messages of states', () => {
             'type',
             'date',
             'downloadURL',
+            'checksum'
         ]);
     });
 

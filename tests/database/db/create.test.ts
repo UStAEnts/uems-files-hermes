@@ -4,6 +4,12 @@ import { DatabaseFile, FileDatabase } from "../../../src/database/FileDatabase";
 import { GetFileNameFunction, UpdateFunction } from "../../../src/uploader/UploadServer";
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, haveNoAdditionalKeys } from "../../utilities/setup";
 import Intentions = BaseSchema.Intentions;
+import temp from "temp";
+
+
+temp.track();
+const temporary = temp.path();
+require('fs').writeFileSync(temporary, 'hi');
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,
@@ -76,7 +82,7 @@ describe('create messages of states', () => {
         });
 
         mocks.provisionUploadURI.mockImplementation((file, update) => {
-            update('updated path', 'updated filename', 'new mime');
+            update(temporary, 'updated filename', 'new mime');
             updateResolve();
 
             return Promise.resolve('faked download URI');
@@ -105,7 +111,7 @@ describe('create messages of states', () => {
         expect(query[0]).toHaveProperty('type', 'type');
         expect(query[0]).toHaveProperty('filename', 'updated filename');
         expect(query[0]).toHaveProperty('mime', 'new mime');
-        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL']));
+        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL', 'checksum']));
 
     });
 
@@ -133,7 +139,7 @@ describe('create messages of states', () => {
         expect(query[0]).toHaveProperty('size', 1000);
         expect(query[0]).toHaveProperty('type', 'type');
         expect(query[0]).toHaveProperty('filename', 'filename');
-        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL']));
+        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'filename', 'size', 'mime', 'owner', 'type', 'date', 'downloadURL', 'checksum']));
     });
 
     describe('file bindings', () => {
