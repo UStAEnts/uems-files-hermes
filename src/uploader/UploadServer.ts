@@ -91,7 +91,7 @@ export class LocalUploadServer implements UploadServerInterface {
         // Try and make the upload path, if it already exists it throws an EEXIST error so we can just ignore that
         try {
             fs.mkdirSync(this._uploadPath, { recursive: true });
-        } catch (err) {
+        } catch (err:any) {
             if (err.code !== 'EEXIST') {
                 console.error('Failed to create the upload folder for the local upload server. If the ')
                 throw err;
