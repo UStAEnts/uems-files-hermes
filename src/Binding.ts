@@ -1,8 +1,16 @@
-import { constants } from "http2";
-import { FileDatabase } from "./database/FileDatabase";
-import { _ml } from "./logging/Log";
-import { RabbitNetworkHandler, tryApplyTrait } from "@uems/micro-builder/build/src";
-import { FileBindingMessage, FileBindingResponse, FileMessage, FileResponse, MsgStatus } from "@uems/uemscommlib";
+import {constants} from "http2";
+import {FileDatabase} from "./database/FileDatabase";
+import {_ml} from "./logging/Log";
+import {RabbitNetworkHandler, tryApplyTrait} from "@uems/micro-builder/build/src";
+import {
+    DiscoveryMessage,
+    DiscoveryResponse,
+    FileBindingMessage,
+    FileBindingResponse,
+    FileMessage,
+    FileResponse,
+    MsgStatus
+} from "@uems/uemscommlib";
 import BindFilesToEventMessage = FileBindingMessage.BindFilesToEventMessage;
 import BindEventsToFileMessage = FileBindingMessage.BindEventsToFileMessage;
 import QueryByEventMessage = FileBindingMessage.QueryByEventMessage;
@@ -11,7 +19,7 @@ import UnbindFilesFromEventMessage = FileBindingMessage.UnbindFilesFromEventMess
 import UnbindEventsFromFileMessage = FileBindingMessage.UnbindEventsFromFileMessage;
 import SetFilesForEventMessage = FileBindingMessage.SetFilesForEventMessage;
 import SetEventsForFileMessage = FileBindingMessage.SetEventsForFileMessage;
-import { ClientFacingError } from "@uems/micro-builder/build/src/errors/ClientFacingError";
+import {ClientFacingError} from "@uems/micro-builder/build/src/errors/ClientFacingError";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
 
 const _b = _ml(__filename, 'binding');
@@ -299,13 +307,94 @@ async function execute(
     requestTracker.save(status === constants.HTTP_STATUS_BAD_REQUEST ? 'fail' : 'success');
 }
 
+
+async function discover(
+    message: DiscoveryMessage.DiscoverMessage,
+    database: FileDatabase,
+    send: (res: DiscoveryResponse.DiscoveryDeleteResponse) => void,
+) {
+    const result: DiscoveryResponse.DiscoverResponse = {
+        userID: message.userID,
+        status: MsgStatus.SUCCESS,
+        msg_id: message.msg_id,
+        msg_intention: 'READ',
+        restrict: 0,
+        modify: 0,
+    };
+
+    if (message.assetType === 'event') {
+        result.modify = (await database.getFilesForEvent(message.assetID)).length;
+    }
+
+    if (message.assetType === 'file') {
+        result.modify = (await database.query({
+            msg_id: message.msg_id,
+            msg_intention: 'READ',
+            status: 0,
+            userID: 'anonymous',
+            id: message.assetID,
+        })).length;
+    }
+
+    send(result);
+}
+
+
+async function removeDiscover(
+    message: DiscoveryMessage.DeleteMessage,
+    database: FileDatabase,
+    send: (res: DiscoveryResponse.DiscoveryDeleteResponse) => void,
+) {
+    const result: DiscoveryResponse.DeleteResponse = {
+        userID: message.userID,
+        status: MsgStatus.SUCCESS,
+        msg_id: message.msg_id,
+        msg_intention: 'DELETE',
+        restrict: 0,
+        modified: 0,
+        successful: false,
+    };
+
+    if (message.assetType === 'event') {
+        const entities = await database.getFilesForEvent(message.assetID);
+
+        result.modified = (await Promise.all(entities.map((entity) => database.delete({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'DELETE',
+            id: entity,
+        })))).length;
+        result.successful = true;
+    }
+
+    if (message.assetType === 'file'){
+        try {
+            result.modified = (await database.delete({
+                msg_id: message.msg_id,
+                msg_intention: 'DELETE',
+                status: 0,
+                userID: 'anonymous',
+                id: message.assetID,
+            })).length;
+            result.successful = true;
+        } catch (e) {
+            result.successful = false;
+        }
+    }
+
+    send(result);
+}
+
 export default function bind(database: FileDatabase, broker: RabbitNetworkHandler<any, any, any, any, any, any>): void {
     broker.on('any', (message, send, routingKey) => {
         _b.debug(`message ${message.msg_id} arrived on ${routingKey}`);
     });
 
     broker.on('query', (message, send, key) => {
-        if (key.startsWith("file.details")) return execute(message, database, send)
+        if (key === 'file.details.discover') return discover(message, database, send);
+        else if (key === 'file.details.delete') return removeDiscover(message, database, send);
+        else if (key.startsWith("file.details")) return execute(message, database, send)
         else if (key.startsWith("file.events")) return handleBinding(message, database, send);
 
         return Promise.reject(new Error('invalid routing key'));
