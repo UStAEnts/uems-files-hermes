@@ -75,7 +75,8 @@ async function handleBinding(
         if (message.msg_intention === 'CREATE') {
             if (message.hasOwnProperty('eventID')) {
                 const m = message as BindFilesToEventMessage;
-                const r = await database.addFilesToEvents(m.eventID, m.fileIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.addFilesToEvents(m.eventID, m.fileIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -86,7 +87,8 @@ async function handleBinding(
                 });
             } else if (message.hasOwnProperty('fileID')) {
                 const m = message as BindEventsToFileMessage;
-                const r = await database.addEventsToFile(m.fileID, m.eventIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.addEventsToFile(m.fileID, m.eventIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -106,7 +108,8 @@ async function handleBinding(
         if (message.msg_intention === 'READ') {
             if (message.hasOwnProperty('eventID')) {
                 const m = message as QueryByEventMessage;
-                const r = await database.getFilesForEvent(m.eventID);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.getFilesForEvent(m.eventID, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -117,7 +120,8 @@ async function handleBinding(
                 });
             } else if (message.hasOwnProperty('fileID')) {
                 const m = message as QueryByFileMessage;
-                const r = await database.getEventsForFile(m.fileID);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.getEventsForFile(m.fileID, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -137,7 +141,8 @@ async function handleBinding(
         if (message.msg_intention === 'UPDATE') {
             if (message.hasOwnProperty('eventID')) {
                 const m = message as SetFilesForEventMessage;
-                const r = await database.setFilesForEvent(m.eventID, m.fileIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.setFilesForEvent(m.eventID, m.fileIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -148,7 +153,8 @@ async function handleBinding(
                 });
             } else if (message.hasOwnProperty('fileID')) {
                 const m = message as SetEventsForFileMessage;
-                const r = await database.setEventsForFile(m.fileID, m.eventIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.setEventsForFile(m.fileID, m.eventIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -168,7 +174,8 @@ async function handleBinding(
         if (message.msg_intention === 'DELETE') {
             if (message.hasOwnProperty('eventID')) {
                 const m = message as UnbindFilesFromEventMessage;
-                const r = await database.removeFilesFromEvents(m.eventID, m.fileIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.removeFilesFromEvents(m.eventID, m.fileIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -179,7 +186,8 @@ async function handleBinding(
                 });
             } else if (message.hasOwnProperty('fileID')) {
                 const m = message as UnbindEventsFromFileMessage;
-                const r = await database.removeEventsFromFile(m.fileID, m.eventIDs);
+                const userID = m.localOnly ? m.userID : undefined;
+                const r = await database.removeEventsFromFile(m.fileID, m.eventIDs, userID);
 
                 requestTracker.save(r ? 'success' : 'fail');
                 send({
@@ -323,7 +331,7 @@ async function discover(
     };
 
     if (message.assetType === 'event') {
-        result.modify = (await database.getFilesForEvent(message.assetID)).length;
+        result.modify = (await database.getFilesForEvent(message.assetID, undefined)).length;
     }
 
     if (message.assetType === 'file') {
@@ -356,7 +364,7 @@ async function removeDiscover(
     };
 
     if (message.assetType === 'event') {
-        const entities = await database.getFilesForEvent(message.assetID);
+        const entities = await database.getFilesForEvent(message.assetID, undefined);
 
         result.modified = (await Promise.all(entities.map((entity) => database.delete({
             msg_id: message.msg_id,

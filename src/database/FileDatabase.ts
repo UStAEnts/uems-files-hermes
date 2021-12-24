@@ -1,16 +1,16 @@
-import { Collection, Db, ObjectId } from "mongodb";
-import { GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder/build/src";
-import { FileMessage, FileResponse } from "@uems/uemscommlib";
+import {Collection, Db, ObjectId} from "mongodb";
+import {GenericMongoDatabase, MongoDBConfiguration} from "@uems/micro-builder/build/src";
+import {FileMessage, FileResponse} from "@uems/uemscommlib";
 import ReadFileMessage = FileMessage.ReadFileMessage;
 import CreateFileMessage = FileMessage.CreateFileMessage;
 import DeleteFileMessage = FileMessage.DeleteFileMessage;
 import UpdateFileMessage = FileMessage.UpdateFileMessage;
 import InternalFile = FileResponse.InternalFile;
-import { UploadServerInterface } from "../uploader/UploadServer";
+import {UploadServerInterface} from "../uploader/UploadServer";
 import ShallowInternalFile = FileResponse.ShallowInternalFile;
-import { MongoDBConfigurationSchema } from "../ConfigurationTypes";
-import { genericDelete, genericUpdate } from "@uems/micro-builder/build/src/utility/GenericDatabaseFunctions";
-import { __ } from "../logging/Log";
+import {MongoDBConfigurationSchema} from "../ConfigurationTypes";
+import {genericDelete, genericUpdate} from "@uems/micro-builder/build/src/utility/GenericDatabaseFunctions";
+import {__} from "../logging/Log";
 import sha256File from "sha256-file";
 
 export type DatabaseFile = ShallowInternalFile & {
@@ -81,18 +81,18 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             this.once('ready', () => {
                 __.debug('Database ready, creating index')
                 if (this._details === undefined) throw new Error('Database initialisation failed');
-                void this._details.createIndex({ name: 'text', filename: 'text' });
+                void this._details.createIndex({name: 'text', filename: 'text'});
                 __.debug('Index asserted')
             })
         } else {
-            void this._details.createIndex({ name: 'text', filename: 'text' });
+            void this._details.createIndex({name: 'text', filename: 'text'});
             __.debug('Index asserted')
         }
 
     }
 
     protected createImpl = async (create: FileMessage.CreateFileMessage, details: Collection): Promise<string[]> => {
-        const { msg_id, msg_intention, status, ...document } = create;
+        const {msg_id, msg_intention, status, ...document} = create;
 
         const createObject: Omit<DatabaseFile, 'id' | 'downloadURL' | 'filePath' | 'mime' | 'checksum'> = {
             filename: document.filename,
@@ -191,6 +191,10 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             find.owner = query.userid;
         }
 
+        if (query.localOnly) {
+            find.owner = query.userID;
+        }
+
         const result: DatabaseFile[] = await details.find(find).toArray();
         const promises: Promise<void>[] = [];
         // Copy _id to id to fit the responsr type.
@@ -218,13 +222,18 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return genericUpdate(update, ['name', 'type'], details)
     }
 
-    public async addFilesToEvents(eventID: string, fileIDs: string[]): Promise<boolean> {
+    public async addFilesToEvents(eventID: string, fileIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
+
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
 
         const result = await this._details.updateMany({
             _id: {
                 $in: fileIDs.map((e) => new ObjectId(e)),
-            }
+            },
+            ...userIDFilter,
         }, {
             $addToSet: {
                 events: eventID,
@@ -238,12 +247,17 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return true;
     }
 
-    public async addEventsToFile(fileID: string, eventIDs: string[]): Promise<boolean> {
+    public async addEventsToFile(fileID: string, eventIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
         if (!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
 
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
+
         const result = await this._details.updateOne({
             _id: new ObjectId(fileID),
+            ...userIDFilter,
         }, {
             $addToSet: {
                 events: {
@@ -259,8 +273,12 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return true;
     }
 
-    public async removeFilesFromEvents(eventID: string, fileIDs: string[]): Promise<boolean> {
+    public async removeFilesFromEvents(eventID: string, fileIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
+
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
 
         const result = await this._details.updateMany({
             _id: {
@@ -279,12 +297,17 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return true;
     }
 
-    public async removeEventsFromFile(fileID: string, eventIDs: string[]): Promise<boolean> {
+    public async removeEventsFromFile(fileID: string, eventIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
         if (!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
 
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
+
         const result = await this._details.updateOne({
             _id: new ObjectId(fileID),
+            ...userIDFilter,
         }, {
             $pullAll: {
                 events: eventIDs,
@@ -298,16 +321,21 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return true;
     }
 
-    public async setFilesForEvent(eventID: string, fileIDs: string[]): Promise<boolean> {
+    public async setFilesForEvent(eventID: string, fileIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
 
         // Going to do this in two steps
         // - Remove event ID from all files
         // - Add event ID to the given files
 
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
+
         const result = await this._details.updateMany({
             // TODO: double check this
             events: eventID,
+            ...userIDFilter,
         }, {
             $pull: {
                 events: eventID,
@@ -318,15 +346,20 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
             throw new Error('failed to update bindings');
         }
 
-        return this.addFilesToEvents(eventID, fileIDs);
+        return this.addFilesToEvents(eventID, fileIDs, userID);
     }
 
-    public async setEventsForFile(fileID: string, eventIDs: string[]): Promise<boolean> {
+    public async setEventsForFile(fileID: string, eventIDs: string[], userID: string | undefined): Promise<boolean> {
         if (this._details === undefined) throw new Error('database not initialised');
         if (!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
 
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
+
         const result = await this._details.updateOne({
             _id: new ObjectId(fileID),
+            ...userIDFilter
         }, {
             $set: {
                 events: eventIDs,
@@ -340,22 +373,32 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
         return true;
     }
 
-    public async getFilesForEvent(eventID: string): Promise<string[]> {
+    public async getFilesForEvent(eventID: string, userID: string | undefined): Promise<string[]> {
         if (this._details === undefined) throw new Error('database not initialised');
+
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
 
         const result = await this._details.find({
             events: eventID,
+            ...userIDFilter
         }).toArray();
 
         return (result ?? []).map((e) => e._id.toHexString());
     }
 
-    public async getEventsForFile(fileID: string): Promise<string[]> {
+    public async getEventsForFile(fileID: string, userID: string | undefined): Promise<string[]> {
         if (this._details === undefined) throw new Error('database not initialised');
         if (!ObjectId.isValid(fileID)) throw new Error('invalid file ID');
 
+        const userIDFilter = userID
+            ? {owner: userID}
+            : {};
+
         const result = await this._details.findOne({
-            _id: new ObjectId(fileID)
+            _id: new ObjectId(fileID),
+            ...userIDFilter
         });
         return result.events ?? [];
     }
