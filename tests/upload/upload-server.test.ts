@@ -74,7 +74,7 @@ describe('upload server tests', () => {
                 filePath: '/download/invalid file key',
             })
             expect(false).toBeTruthy();
-        } catch (e) {
+        } catch (e: any) {
             expect(e.message).toContain('ENOENT');
         }
     })

@@ -157,8 +157,14 @@ export class FileDatabase extends GenericMongoDatabase<ReadFileMessage, CreateFi
 
         // IDs have to be treated as object IDs
         if (query.id) {
-            if (!ObjectId.isValid(query.id)) throw new Error('invalid query id');
-            find._id = new ObjectId(query.id);
+            if (typeof (query.id) === 'string') {
+                if (!ObjectId.isValid(query.id)) throw new Error('invalid query id');
+                find._id = new ObjectId(query.id);
+            }else{
+                find._id = {
+                    $in: query.id.map((e) => new ObjectId(e)),
+                };
+            }
         }
 
         // For now group all the text fields into one and perform a full text search.
